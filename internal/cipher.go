@@ -8,9 +8,23 @@ import (
 	"crypto/sha256"
 	"errors"
 	"io"
+	"unicode/utf8"
 )
 
+// ValidatePassword checks if the password meets the minimum requirements.
+// Requirement: At least 6 characters.
+func ValidatePassword(password string) error {
+	if utf8.RuneCountInString(password) < 6 {
+		return errors.New("password must be at least 6 characters long")
+	}
+	return nil
+}
+
 func Encrypt(password string, plaintext []byte) ([]byte, error) {
+	if err := ValidatePassword(password); err != nil {
+		return nil, err
+	}
+
 	salt := make([]byte, 8)
 	if _, err := io.ReadFull(rand.Reader, salt); err != nil {
 		return nil, err
@@ -36,6 +50,10 @@ func Encrypt(password string, plaintext []byte) ([]byte, error) {
 }
 
 func Decrypt(password string, fullData []byte) ([]byte, error) {
+	if err := ValidatePassword(password); err != nil {
+		return nil, err
+	}
+
 	if len(fullData) < 8 {
 		return nil, errors.New("data too short")
 	}
