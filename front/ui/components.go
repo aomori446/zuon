@@ -52,7 +52,7 @@ func NewFileSelector(
 			}
 			defer reader.Close()
 			if err != nil {
-				dialog.ShowError(err, parent)
+				ShowLocalizedError(err, parent)
 				return
 			}
 			
@@ -134,8 +134,8 @@ func ShowResultDialog(parent fyne.Window, data []byte, ext string) {
 		
 	} else {
 		info := widget.NewLabel(i18n.Tf("label_format_size", map[string]interface{}{
-			"0": ext,
-			"1": formatBytes(len(data)),
+			"Format": ext,
+			"Size":   formatBytes(len(data)),
 		}))
 		info.Alignment = fyne.TextAlignCenter
 		
@@ -154,14 +154,14 @@ func saveFile(parent fyne.Window, data []byte, ext string) {
 			return
 		}
 		if err != nil {
-			dialog.ShowError(err, parent)
+			ShowLocalizedError(err, parent)
 			return
 		}
 		defer writer.Close()
 		
 		_, err = writer.Write(data)
 		if err != nil {
-			dialog.ShowError(err, parent)
+			ShowLocalizedError(err, parent)
 			return
 		}
 		

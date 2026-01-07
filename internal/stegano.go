@@ -3,15 +3,7 @@ package internal
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
-	"fmt"
 	"image"
-)
-
-var (
-	ErrImageNotSupported = errors.New("image format not supported or too small")
-	ErrDataNotFound      = errors.New("no hidden data detected")
-	ErrDecryptionFailed  = errors.New("decryption failed (wrong password or data corrupted)")
 )
 
 const Overhead = 8 + 12 + 16 + 4
@@ -33,12 +25,12 @@ func EmbedData(src image.Image, data []byte, extension string, off int, password
 	
 	maxCapacity := op.Amount() - off
 	if maxCapacity <= 0 {
-		return nil, fmt.Errorf("%w: offset out of bounds", ErrImageNotSupported)
+		return nil, ErrImageNotSupported
 	}
 	
 	extBytes := []byte(extension)
 	if len(extBytes) > 255 {
-		return nil, errors.New("extension too long (max 255 bytes)")
+		return nil, ErrExtensionTooLong
 	}
 	
 	payload := new(bytes.Buffer)
@@ -50,12 +42,12 @@ func EmbedData(src image.Image, data []byte, extension string, off int, password
 	requiredSize := len(plaintext) + Overhead
 	
 	if requiredSize > maxCapacity {
-		return nil, fmt.Errorf("%w: need %d bytes, have %d", ErrImageNotSupported, requiredSize, maxCapacity)
+		return nil, ErrImageTooSmall
 	}
 	
 	ciphertext, err := Encrypt(password, plaintext)
 	if err != nil {
-		return nil, fmt.Errorf("encryption internal error: %v", err)
+		return nil, ErrInternal
 	}
 	
 	length := uint32(len(ciphertext))
@@ -63,11 +55,11 @@ func EmbedData(src image.Image, data []byte, extension string, off int, password
 	binary.BigEndian.PutUint32(header, length)
 	
 	if err = op.Embed(header, off); err != nil {
-		return nil, fmt.Errorf("%w: header embed failed: %v", ErrImageNotSupported, err)
+		return nil, ErrInternal
 	}
 	
 	if err = op.Embed(ciphertext, off+4); err != nil {
-		return nil, fmt.Errorf("%w: body embed failed: %v", ErrImageNotSupported, err)
+		return nil, ErrInternal
 	}
 	
 	return dst, nil
@@ -79,31 +71,31 @@ func ExtractData(src image.Image, off int, password string) ([]byte, string, err
 	
 	header, err := op.UnEmbed(4, off)
 	if err != nil {
-		return nil, "", fmt.Errorf("%w: cannot read header", ErrDataNotFound)
+		return nil, "", ErrDataNotFound
 	}
 	
 	length := binary.BigEndian.Uint32(header)
 	if length == 0 || int(length) > op.Amount() {
-		return nil, "", fmt.Errorf("%w: invalid length %d", ErrDataNotFound, length)
+		return nil, "", ErrDataNotFound
 	}
 	
 	ciphertext, err := op.UnEmbed(int(length), off+4)
 	if err != nil {
-		return nil, "", fmt.Errorf("%w: incomplete data stream", ErrDataNotFound)
+		return nil, "", ErrDataNotFound
 	}
 	
 	plaintext, err := Decrypt(password, ciphertext)
 	if err != nil {
-		return nil, "", fmt.Errorf("%w: %v", ErrDecryptionFailed, err)
+		return nil, "", ErrDecryptionFailed
 	}
 	
 	if len(plaintext) < 1 {
-		return nil, "", errors.New("data corrupted: missing extension length")
+		return nil, "", ErrInternal
 	}
 	
 	extLen := int(plaintext[0])
 	if len(plaintext) < 1+extLen {
-		return nil, "", errors.New("data corrupted: extension length mismatch")
+		return nil, "", ErrInternal
 	}
 	
 	extension := string(plaintext[1 : 1+extLen])
