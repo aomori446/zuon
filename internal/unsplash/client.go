@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	baseURL   = "https:
+	baseURL   = "https://api.unsplash.com"
 	searchURL = "/search/photos"
 )
 
