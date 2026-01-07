@@ -10,6 +10,7 @@ import (
 	"golang.org/x/text/language"
 )
 
+//go:embed locales/*.json
 var localeFS embed.FS
 
 var bundle *i18n.Bundle
