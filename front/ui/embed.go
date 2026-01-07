@@ -1,4 +1,4 @@
-package main
+package ui
 
 import (
 	"errors"
@@ -6,178 +6,253 @@ import (
 	"image"
 	"image/png"
 	"io"
-	"path/filepath"
-	"strings"
-
+	"net/url"
+	"os"
+	"path"
+	"time"
+	
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/storage"
-	"fyne.io/fyne/v2/theme"
-	"fyne.io/fyne/v2/widget"
-	"github.com/aomori446/zuon/internal"
-)
-
-func EmbedTab(w fyne.Window) (fyne.CanvasObject, func()) {
-	var selectedImage image.Image
-	var selectedImageName string
-	var fileToHide []byte
-	var fileExtension string
-
-	var selectBtn *widget.Button
-
-	selectBtn, _ = createImageSelector(w, func(img image.Image, name string) {
-		selectedImage = img
-		selectedImageName = name
-	})
-
-	passEntry := widget.NewPasswordEntry()
-	passEntry.PlaceHolder = "Encryption Password (min 6 chars)"
-	passEntry.OnChanged = func(s string) {
-		if err := internal.ValidatePassword(s); err != nil {
-			passEntry.SetValidationError(err)
-		} else {
-			passEntry.SetValidationError(nil)
+		"fyne.io/fyne/v2/theme"
+		"fyne.io/fyne/v2/widget"
+		"github.com/aomori446/zuon/front/i18n"
+		"github.com/aomori446/zuon/internal"
+	)
+	
+	func NewEmbedTab(parent fyne.Window) *container.TabItem {
+		
+		var btnImage *CarryButton
+		var labelCapacity *widget.Label
+		var cardImage *widget.Card
+		
+		cardImage, btnImage, labelCapacity = NewFileSelector(
+			parent,
+			i18n.T("embed_carrier_title"),
+			i18n.T("embed_carrier_subtitle"),
+			i18n.T("dialog_select_carrier"),
+			[]string{".png", ".jpg", ".jpeg"},
+			func(reader fyne.URIReadCloser) {
+				img, _, err := image.Decode(reader)
+				if err != nil {
+					dialog.ShowError(err, parent)
+					return
+				}
+				
+				btnImage.Carry = img
+				
+				capacity := formatBytes(internal.Capacity(img))
+				labelCapacity.SetText(i18n.Tf("label_capacity", map[string]interface{}{"0": capacity}))
+				labelCapacity.TextStyle = fyne.TextStyle{Bold: true}
+				labelCapacity.Show()
+			},
+		)
+		
+		textEntry := widget.NewMultiLineEntry()
+		textEntry.SetPlaceHolder(i18n.T("placeholder_text"))
+		textEntry.SetMinRowsVisible(4)
+		
+		fileSizeLabel := widget.NewLabel("")
+		fileSizeLabel.Hide()
+		fileSizeLabel.Alignment = fyne.TextAlignCenter
+		fileSizeLabel.TextStyle = fyne.TextStyle{Italic: true}
+		
+		fileBtn := NewCarryButton(i18n.T("btn_select_file"), theme.FolderOpenIcon())
+		fileBtn.OnTapped = func() {
+			d := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
+				if reader == nil {
+					return
+				}
+				if err != nil {
+					dialog.ShowError(err, parent)
+					return
+				}
+				defer reader.Close()
+				
+				if uri := reader.URI(); uri != nil {
+					if parentURI, err := storage.Parent(uri); err == nil {
+						fyne.CurrentApp().Preferences().SetString("last_opened_dir", parentURI.String())
+					}
+				}
+				
+				var sizeStr string
+				if uri := reader.URI(); uri != nil && uri.Scheme() == "file" {
+					if info, err := os.Stat(uri.Path()); err == nil {
+						sizeStr = formatBytes(int(info.Size()))
+					}
+				}
+				
+				if sizeStr != "" {
+					fileSizeLabel.SetText(i18n.Tf("label_file_size", map[string]interface{}{"0": sizeStr}))
+					fileSizeLabel.Show()
+				} else {
+					fileSizeLabel.Hide()
+				}
+				
+				fileBtn.Carry = reader.URI()
+				fileBtn.SetText(reader.URI().Name())
+				fileBtn.SetIcon(theme.ConfirmIcon())
+			}, parent)
+			d.SetTitleText(i18n.T("dialog_select_hidden_file"))
+			
+			if lastDir := fyne.CurrentApp().Preferences().String("last_opened_dir"); lastDir != "" {
+				if listURI, err := storage.ParseURI(lastDir); err == nil {
+					if listable, err := storage.ListerForURI(listURI); err == nil {
+						d.SetLocation(listable)
+					}
+				}
+			}
+			d.Show()
 		}
-	}
-
-	msgEntry := widget.NewMultiLineEntry()
-	msgEntry.PlaceHolder = "Enter secret message here..."
-	msgEntry.SetMinRowsVisible(5)
-
-	var selectFileBtn *widget.Button
-	selectFileBtn = widget.NewButtonWithIcon("Select File to Hide", theme.FileIcon(), func() {
-		fd := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
-			if err != nil || reader == nil {
+		fileBtn.Hide()
+		textEntry.Hide()
+		
+		radioGroup := widget.NewRadioGroup([]string{i18n.T("radio_text"), i18n.T("radio_file")}, func(s string) {
+			if s == i18n.T("radio_text") {
+				textEntry.Show()
+				fileBtn.Hide()
+				fileSizeLabel.Hide()
+			} else {
+				textEntry.Hide()
+				fileBtn.Show()
+				if fileBtn.Carry != nil {
+					fileSizeLabel.Show()
+				}
+			}
+		})
+		radioGroup.Horizontal = true
+		radioGroup.SetSelected(i18n.T("radio_text"))
+		
+		cardData := widget.NewCard(i18n.T("card_data_title"), i18n.T("card_data_subtitle"),
+			container.NewVBox(radioGroup, textEntry, fileBtn, fileSizeLabel),
+		)
+		
+		cardPassword, entryPassword := NewPasswordCard()
+		
+		progressBar := widget.NewProgressBarInfinite()
+		progressBar.Hide()
+		
+		embedButton := widget.NewButtonWithIcon(i18n.T("btn_embed_start"), theme.MailSendIcon(), nil)
+		embedButton.Importance = widget.HighImportance
+		
+		embedButton.OnTapped = func() {
+			
+			if btnImage.Carry == nil {
+				dialog.ShowError(errors.New(i18n.T("err_no_carrier")), parent)
 				return
 			}
-			defer reader.Close()
-
-			data, err := io.ReadAll(reader)
-			if err != nil {
-				dialog.ShowError(err, w)
-				return
-			}
-			fileToHide = data
-			fileExtension = filepath.Ext(reader.URI().Name())
-			selectFileBtn.SetText(fmt.Sprintf("%s (%s)", reader.URI().Name(), formatBytes(len(data))))
-		}, w)
-		fd.Show()
-	})
-
-	textContainer := container.NewPadded(msgEntry)
-	fileContainer := container.NewPadded(selectFileBtn)
-	fileContainer.Hide()
-
-	inputType := widget.NewRadioGroup([]string{"Text", "File"}, func(s string) {
-		if s == "Text" {
-			fileContainer.Hide()
-			textContainer.Show()
-		} else {
-			textContainer.Hide()
-			fileContainer.Show()
-		}
-	})
-	inputType.Horizontal = true
-	inputType.Selected = "Text"
-
-	embedBtn := widget.NewButtonWithIcon("Embed & Save", theme.DocumentSaveIcon(), func() {
-		if selectedImage == nil {
-			dialog.ShowError(errors.New("please select an image first"), w)
-			return
-		}
-		if err := internal.ValidatePassword(passEntry.Text); err != nil {
-			dialog.ShowError(err, w)
-			return
-		}
-
-		dialog.ShowConfirm("Important", "The output image MUST be saved as a PNG file to preserve the hidden data.\n\nDo you want to proceed?", func(ok bool) {
-			if !ok {
-				return
-			}
-
+			
 			var data []byte
 			var ext string
-
-			if inputType.Selected == "Text" {
-				if msgEntry.Text == "" {
-					dialog.ShowError(errors.New("message is empty"), w)
+			
+			if radioGroup.Selected == i18n.T("radio_text") {
+				text := textEntry.Text
+				if text == "" {
+					dialog.ShowError(errors.New(i18n.T("err_no_text")), parent)
 					return
 				}
-				data = []byte(msgEntry.Text)
-				ext = ".txt"
+				data = []byte(text)
+				ext = ""
 			} else {
-				if len(fileToHide) == 0 {
-					dialog.ShowError(errors.New("no file selected"), w)
+				if fileBtn.Carry == nil {
+					dialog.ShowError(errors.New(i18n.T("err_no_file")), parent)
 					return
 				}
-				data = fileToHide
-				ext = fileExtension
+				uri := fileBtn.Carry.(fyne.URI)
+				f, err := os.Open(uri.Path())
+				if err != nil {
+					dialog.ShowError(err, parent)
+					return
+				}
+				defer f.Close()
+				
+				data, err = io.ReadAll(f)
+				if err != nil {
+					dialog.ShowError(err, parent)
+					return
+				}
+				ext = path.Ext(uri.Path())
 			}
-
-			res, err := internal.EmbedData(selectedImage, data, ext, 0, passEntry.Text)
-			if err != nil {
-				dialog.ShowError(fmt.Errorf("embed error: %w", err), w)
+			
+			if entryPassword.Validate() != nil {
+				dialog.ShowError(errors.New(i18n.T("err_password_short")), parent)
 				return
 			}
-
-			sd := dialog.NewFileSave(func(writer fyne.URIWriteCloser, err error) {
-				if err != nil {
-					dialog.ShowError(err, w)
-					return
-				}
-				if writer == nil {
-					return
-				}
-				defer writer.Close()
-
-				if err := png.Encode(writer, res); err != nil {
-					dialog.ShowError(err, w)
-					return
-				}
-				dialog.ShowInformation("Success", "Image saved successfully!", w)
-			}, w)
-
-			baseName := selectedImageName
-			if ext := filepath.Ext(baseName); ext != "" {
-				baseName = strings.TrimSuffix(baseName, ext)
-			}
-			if baseName == "" {
-				baseName = "secret_image"
-			}
-			sd.SetFileName(baseName + "_zuon.png")
-
-			sd.SetFilter(storage.NewExtensionFileFilter([]string{".png"}))
-			sd.Show()
-		}, w)
-	})
-	embedBtn.Importance = widget.HighImportance
-
-	content := container.NewVBox(
-		widget.NewLabelWithStyle("1. Select Source Image", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
-		container.NewPadded(selectBtn),
-
-		widget.NewLabelWithStyle("2. Secret Data", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
-		container.NewPadded(container.NewVBox(passEntry, inputType)),
-		container.NewStack(textContainer, fileContainer),
-
-		layout.NewSpacer(),
-		embedBtn,
-	)
-
-	resetFunc := func() {
-		selectedImage = nil
-		selectedImageName = ""
-		fileToHide = nil
-		fileExtension = ""
-		selectBtn.SetText("Select Image")
-		selectBtn.SetIcon(theme.FolderOpenIcon())
-		passEntry.SetText("")
-		msgEntry.SetText("")
-		selectFileBtn.SetText("Select File to Hide")
-		inputType.SetSelected("Text")
+			password := entryPassword.Text
+			
+			baseImage := btnImage.Carry.(image.Image)
+			
+			embedButton.Disable()
+			progressBar.Show()
+			
+			go func() {
+				embedImg, err := internal.EmbedData(baseImage, data, ext, 0, password)
+				
+				fyne.Do(func() {
+					embedButton.Enable()
+					progressBar.Hide()
+					
+					if err != nil {
+						dialog.ShowError(err, parent)
+						return
+					}
+					
+					saveEmbedResult(parent, embedImg)
+				})
+			}()
+		}
+		
+		contentVBox := container.New(
+			&customVBox{},
+			cardImage,
+			layout.NewSpacer(),
+			cardData,
+			layout.NewSpacer(),
+			cardPassword,
+			layout.NewSpacer(),
+			progressBar,
+			embedButton,
+		)
+		
+		return container.NewTabItem(i18n.T("tab_embed"), container.NewScroll(container.NewPadded(contentVBox)))
 	}
-
-	return container.NewPadded(content), resetFunc
-}
+	
+	func saveEmbedResult(parent fyne.Window, img image.Image) {
+		fsDialog := dialog.NewFileSave(func(writer fyne.URIWriteCloser, err error) {
+			if writer == nil {
+				return
+			}
+			if err != nil {
+				dialog.ShowError(err, parent)
+				return
+			}
+			defer writer.Close()
+			
+			err = png.Encode(writer, img)
+			if err != nil {
+				dialog.ShowError(err, parent)
+				return
+			}
+			
+			savedTo := writer.URI().Path()
+			hyperlink := widget.NewHyperlink(savedTo, &url.URL{
+				Scheme: "file",
+				Path:   savedTo,
+			})
+			
+			dialog.NewCustom(i18n.T("dialog_embed_success"), "OK",
+				container.NewVBox(
+					widget.NewLabel(i18n.T("dialog_file_saved_to")),
+					hyperlink,
+				), parent).Show()
+				
+		}, parent)
+		
+		fsDialog.SetTitleText(i18n.T("dialog_save_embed_title"))
+		fsDialog.SetFileName(fmt.Sprintf("%d_zuon.png", time.Now().Unix()))
+		fsDialog.SetFilter(storage.NewExtensionFileFilter([]string{".png"}))
+		fsDialog.Show()
+	}
+	

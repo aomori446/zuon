@@ -1,157 +1,110 @@
-package main
+package ui
 
 import (
 	"errors"
-	"fmt"
-	"image"
-	"net/http"
-	"unicode/utf8"
-
+	"image/png"
+	"os"
+	
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
-	"fyne.io/fyne/v2/theme"
-	"fyne.io/fyne/v2/widget"
-	"github.com/aomori446/zuon/internal"
-)
-
-func ExtractTab(w fyne.Window) (fyne.CanvasObject, func()) {
-	var selectedImage image.Image
-	var extractedData []byte
-	var extractedExt string
-
-	var selectBtn *widget.Button
-
-	selectBtn, _ = createImageSelector(w, func(img image.Image, name string) {
-		selectedImage = img
-	})
-
-	passEntry := widget.NewPasswordEntry()
-	passEntry.PlaceHolder = "Decryption Password"
-	passEntry.OnChanged = func(s string) {
-		if err := internal.ValidatePassword(s); err != nil {
-			passEntry.SetValidationError(err)
-		} else {
-			passEntry.SetValidationError(nil)
-		}
-	}
-
-	resultCard := widget.NewCard("Extraction Result", "", nil)
-	resultCard.Hide()
-
-	extractBtn := widget.NewButtonWithIcon("Extract Data", theme.ConfirmIcon(), func() {
-		if selectedImage == nil {
-			dialog.ShowError(errors.New("please select an image first"), w)
-			return
-		}
-		if err := internal.ValidatePassword(passEntry.Text); err != nil {
-			dialog.ShowError(err, w)
-			return
-		}
-
-		data, ext, err := internal.ExtractData(selectedImage, 0, passEntry.Text)
-		if err != nil {
-			resultCard.Hide()
-			if errors.Is(err, internal.ErrDecryptionFailed) {
-				dialog.ShowError(errors.New("wrong password or no data found"), w)
-			} else {
-				dialog.ShowError(fmt.Errorf("extract error: %w", err), w)
+		"fyne.io/fyne/v2/theme"
+		"fyne.io/fyne/v2/widget"
+		"github.com/aomori446/zuon/front/i18n"
+		"github.com/aomori446/zuon/internal"
+	)
+	
+	func NewExtractTab(parent fyne.Window) *container.TabItem {
+		
+		var btnImage *CarryButton
+		var cardImage *widget.Card
+	
+		cardImage, btnImage, _ = NewFileSelector(
+			parent,
+			i18n.T("extract_source_title"),
+			i18n.T("extract_source_subtitle"),
+			i18n.T("dialog_select_extract_source"),
+			[]string{".png"},
+			func(reader fyne.URIReadCloser) {
+				btnImage.Carry = reader.URI()
+			},
+		)
+		
+		cardPassword, entryPassword := NewPasswordCard()
+		
+		progressBar := widget.NewProgressBarInfinite()
+		progressBar.Hide()
+		
+		extractButton := widget.NewButtonWithIcon(i18n.T("btn_extract_start"), theme.MediaReplayIcon(), nil)
+		extractButton.Importance = widget.HighImportance
+		
+		extractButton.OnTapped = func() {
+			
+			if btnImage.Carry == nil {
+				dialog.ShowError(errors.New(i18n.T("err_no_extract_source")), parent)
+				return
 			}
-			return
-		}
-
-		extractedData = data
-		extractedExt = ext
-
-		dialog.ShowInformation("Success", "Data extracted successfully!", w)
-
-		contentType := http.DetectContentType(data)
-		isText := utf8.Valid(data) && (contentType == "text/plain; charset=utf-8" || contentType == "text/plain")
-
-		suggestedName := "extracted"
-		if extractedExt != "" {
-			suggestedName += extractedExt
-		} else {
-			suggestedName += suggestExtension(contentType)
-		}
-
-		resultContent := container.NewVBox()
-
-		infoText := fmt.Sprintf("Size: %s", formatBytes(len(data)))
-		if extractedExt != "" {
-			infoText += fmt.Sprintf("\nOriginal Extension: %s", extractedExt)
-		}
-		resultContent.Add(widget.NewLabel(infoText))
-
-		saveBtn := widget.NewButtonWithIcon("Save as File...", theme.DocumentSaveIcon(), func() {
-			sd := dialog.NewFileSave(func(writer fyne.URIWriteCloser, err error) {
-				if err != nil || writer == nil {
+			
+			if entryPassword.Validate() != nil {
+				dialog.ShowError(errors.New(i18n.T("err_password_short")), parent)
+				return
+			}
+			
+			uri := btnImage.Carry.(fyne.URI)
+			password := entryPassword.Text
+			
+			extractButton.Disable()
+			progressBar.Show()
+			
+			go func() {
+				f, err := os.Open(uri.Path())
+				if err != nil {
+					fyne.Do(func() {
+						extractButton.Enable()
+						progressBar.Hide()
+						dialog.ShowError(err, parent)
+					})
 					return
 				}
-				defer writer.Close()
-				writer.Write(extractedData)
-			}, w)
-			sd.SetFileName(suggestedName)
-			sd.Show()
-		})
-
-		btns := container.NewHBox(saveBtn)
-
-		if isText {
-			copyBtn := widget.NewButtonWithIcon("Copy Text", theme.ContentCopyIcon(), func() {
-				w.Clipboard().SetContent(string(extractedData))
-				dialog.ShowInformation("Copied", "Text copied to clipboard", w)
-			})
-			btns.Add(copyBtn)
+				defer f.Close()
+				
+				img, err := png.Decode(f)
+				if err != nil {
+					fyne.Do(func() {
+						extractButton.Enable()
+						progressBar.Hide()
+						dialog.ShowError(err, parent)
+					})
+					return
+				}
+				
+				data, ext, err := internal.ExtractData(img, 0, password)
+				
+				fyne.Do(func() {
+					extractButton.Enable()
+					progressBar.Hide()
+					
+					if err != nil {
+						dialog.ShowError(err, parent)
+						return
+					}
+					
+					ShowResultDialog(parent, data, ext)
+				})
+			}()
 		}
-		resultContent.Add(btns)
-
-		if isText {
-			resultContent.Add(widget.NewSeparator())
-			resultContent.Add(widget.NewLabelWithStyle("Text Preview:", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}))
-
-			textStr := string(data)
-			if len(textStr) > 500 {
-				textStr = textStr[:500] + "... (truncated)"
-			}
-
-			entry := widget.NewMultiLineEntry()
-			entry.SetText(textStr)
-			entry.Disable()
-			entry.TextStyle = fyne.TextStyle{Monospace: true}
-			resultContent.Add(entry)
-		} else {
-			resultContent.Add(widget.NewSeparator())
-			resultContent.Add(widget.NewLabelWithStyle("Binary file detected.", fyne.TextAlignLeading, fyne.TextStyle{Italic: true}))
-		}
-
-		resultCard.SetContent(resultContent)
-		resultCard.Show()
-	})
-	extractBtn.Importance = widget.HighImportance
-
-	content := container.NewVBox(
-		widget.NewLabelWithStyle("1. Select Encoded Image", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
-		container.NewPadded(selectBtn),
-
-		widget.NewLabelWithStyle("2. Decrypt", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
-		container.NewPadded(passEntry),
-
-		extractBtn,
-		layout.NewSpacer(),
-		resultCard,
-	)
-
-	resetFunc := func() {
-		selectedImage = nil
-		extractedData = nil
-		extractedExt = ""
-		selectBtn.SetText("Select Image")
-		selectBtn.SetIcon(theme.FolderOpenIcon())
-		passEntry.SetText("")
-		resultCard.Hide()
+		
+		contentVBox := container.New(
+			&customVBox{},
+			cardImage,
+			layout.NewSpacer(),
+			cardPassword,
+			layout.NewSpacer(),
+			progressBar,
+			extractButton,
+		)
+		
+		return container.NewTabItem(i18n.T("tab_extract"), container.NewScroll(container.NewPadded(contentVBox)))
 	}
-
-	return container.NewPadded(container.NewVScroll(content)), resetFunc
-}
+	
