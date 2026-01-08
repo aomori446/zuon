@@ -12,6 +12,7 @@ import (
 	"github.com/aomori446/zuon/front/i18n"
 )
 
+//go:embed assets/Icon.png
 var iconData embed.FS
 
 func Start() {
