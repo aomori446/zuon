@@ -1,12 +1,13 @@
 package ui
 
 import (
-	"errors"
+	"encoding/json"
 	"fmt"
 	"image"
 	"log"
-	"os"
-	
+	"net/http"
+	"net/url"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
@@ -14,7 +15,6 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/aomori446/zuon/front/i18n"
-	"github.com/aomori446/zuon/internal"
 	"github.com/aomori446/zuon/internal/unsplash"
 )
 
@@ -46,73 +46,6 @@ func (t *tappableImage) Tapped(_ *fyne.PointEvent) {
 }
 
 func ShowUnsplashSearch(parent fyne.Window, onSelected func(img image.Image, name string)) {
-	
-	apiKey := os.Getenv("UNSPLASH_ACCESS_KEY")
-	if apiKey == "" {
-		apiKey = fyne.CurrentApp().Preferences().String("unsplash_key")
-	}
-	
-	if apiKey == "" {
-		input := widget.NewEntry()
-		input.SetPlaceHolder("Access Key")
-		
-		msgLabel := widget.NewLabel(i18n.T("dialog_api_key_msg"))
-		msgLabel.Wrapping = fyne.TextWrapWord
-		
-		loading := widget.NewProgressBarInfinite()
-		loading.Hide()
-		
-		var d dialog.Dialog
-		
-		confirmBtn := widget.NewButton(i18n.T("btn_save"), func() {
-			key := input.Text
-			if key == "" {
-				return
-			}
-			
-			input.Disable()
-			loading.Show()
-			
-			go func() {
-				
-				client, err := unsplash.NewClient(key)
-				if err == nil {
-					
-					_, err = client.SearchPhotos("test", 1, 1)
-				}
-				
-				fyne.Do(func() {
-					input.Enable()
-					loading.Hide()
-					
-					if err != nil {
-						ShowLocalizedError(err, parent)
-					} else {
-						
-						fyne.CurrentApp().Preferences().SetString("unsplash_key", key)
-						d.Hide()
-						
-						ShowUnsplashSearch(parent, onSelected)
-					}
-				})
-			}()
-		})
-		confirmBtn.Importance = widget.HighImportance
-		
-		content := container.NewVBox(msgLabel, input, loading, confirmBtn)
-		
-		d = dialog.NewCustom(i18n.T("dialog_api_key_title"), i18n.T("btn_close"), content, parent)
-		d.Resize(fyne.NewSize(400, 200))
-		d.Show()
-		return
-	}
-	
-	client, err := unsplash.NewClient(apiKey)
-	if err != nil {
-		ShowLocalizedError(err, parent)
-		return
-	}
-	
 	var d dialog.Dialog
 	
 	searchEntry := widget.NewEntry()
@@ -146,17 +79,27 @@ func ShowUnsplashSearch(parent fyne.Window, onSelected func(img image.Image, nam
 				})
 			}()
 			
-			results, err := client.SearchPhotos(query, 1, 12)
-			
+			// Call local server instead of direct API
+			reqURL := fmt.Sprintf("http://localhost:8080/search?query=%s&page=1&per_page=12", url.QueryEscape(query))
+			resp, err := http.Get(reqURL)
 			if err != nil {
 				fyne.Do(func() {
-					
-					if errors.Is(err, internal.ErrInvalidAPIKey) {
-						fyne.CurrentApp().Preferences().SetString("unsplash_key", "")
-						if d != nil {
-							d.Hide()
-						}
-					}
+					ShowLocalizedError(err, parent)
+				})
+				return
+			}
+			defer resp.Body.Close()
+
+			if resp.StatusCode != http.StatusOK {
+				fyne.Do(func() {
+					ShowLocalizedError(fmt.Errorf("server error: %d", resp.StatusCode), parent)
+				})
+				return
+			}
+
+			var results unsplash.SearchResult
+			if err := json.NewDecoder(resp.Body).Decode(&results); err != nil {
+				fyne.Do(func() {
 					ShowLocalizedError(err, parent)
 				})
 				return
