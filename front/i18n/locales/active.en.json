@@ -61,5 +61,12 @@
   "btn_login_github": "Login with GitHub",
   "login_opening_browser": "Opening browser...",
   "login_error_server": "Server error",
-  "login_timeout": "Login timeout"
+  "login_timeout": "Login timeout",
+  "tab_settings": "Settings",
+  "settings_theme": "Theme",
+  "settings_theme_system": "System Default",
+  "settings_theme_dark": "Dark Mode",
+  "settings_theme_light": "Light Mode",
+  "settings_language": "Language",
+  "settings_account": "Account"
 }

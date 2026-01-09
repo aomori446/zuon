@@ -61,5 +61,12 @@
   "btn_login_github": "使用 GitHub 登录",
   "login_opening_browser": "正在打开浏览器...",
   "login_error_server": "服务器错误",
-  "login_timeout": "登录超时"
+  "login_timeout": "登录超时",
+  "tab_settings": "设置",
+  "settings_theme": "外观主题",
+  "settings_theme_system": "跟随系统",
+  "settings_theme_dark": "深色模式",
+  "settings_theme_light": "浅色模式",
+  "settings_language": "语言设置",
+  "settings_account": "账户管理"
 }

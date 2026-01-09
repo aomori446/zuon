@@ -61,5 +61,12 @@
   "btn_login_github": "GitHubでログイン",
   "login_opening_browser": "ブラウザを開いています...",
   "login_error_server": "サーバーエラー",
-  "login_timeout": "ログインタイムアウト"
+  "login_timeout": "ログインタイムアウト",
+  "tab_settings": "設定",
+  "settings_theme": "テーマ",
+  "settings_theme_system": "システム設定",
+  "settings_theme_dark": "ダークモード",
+  "settings_theme_light": "ライトモード",
+  "settings_language": "言語",
+  "settings_account": "アカウント"
 }

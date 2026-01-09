@@ -19,11 +19,7 @@ func Start() {
 	a := app.NewWithID("com.aomori446.zuon")
 	i18n.Init()
 	
-	if i18n.GetLang() == "my" {
-		a.Settings().SetTheme(&myTheme{})
-	} else {
-		a.Settings().SetTheme(theme.DefaultTheme())
-	}
+	applyTheme(a)
 
 	token := a.Preferences().String("auth_token")
 	if token == "" {
@@ -36,6 +32,11 @@ func Start() {
 	}
 	
 	a.Run()
+}
+
+func applyTheme(a fyne.App) {
+	mode := a.Preferences().Int("theme_mode")
+	a.Settings().SetTheme(NewMyTheme(mode))
 }
 
 func showMainWindow(a fyne.App) {
@@ -56,12 +57,16 @@ func refreshWindow(w fyne.Window) {
 	}{
 		{i18n.T("tab_embed"), theme.DocumentCreateIcon()},
 		{i18n.T("tab_extract"), theme.VisibilityIcon()},
+		{i18n.T("tab_settings"), theme.SettingsIcon()},
 	}
 	
 	embedPage := NewEmbedTab(w).Content
 	extractPage := NewExtractTab(w).Content
+	settingsPage := NewSettingsTab(w, fyne.CurrentApp(), func() {
+		refreshWindow(w)
+	}).Content
 	
-	pages := []fyne.CanvasObject{embedPage, extractPage}
+	pages := []fyne.CanvasObject{embedPage, extractPage, settingsPage}
 	
 	contentContainer := container.NewStack()
 	
@@ -94,38 +99,6 @@ func refreshWindow(w fyne.Window) {
 		contentContainer.Refresh()
 	}
 	
-	langMap := map[string]string{
-		"Chinese":  "zh",
-		"English":  "en",
-		"Japanese": "ja",
-		"Myanmar":  "my",
-	}
-	codeMap := map[string]string{
-		"zh": "Chinese",
-		"en": "English",
-		"ja": "Japanese",
-		"my": "Myanmar",
-	}
-	
-	langSelect := widget.NewSelect([]string{"Chinese", "English", "Japanese", "Myanmar"}, func(s string) {
-		if code, ok := langMap[s]; ok {
-			if code != i18n.GetLang() {
-				i18n.SetLang(code)
-				if code == "my" {
-					fyne.CurrentApp().Settings().SetTheme(&myTheme{})
-				} else {
-					fyne.CurrentApp().Settings().SetTheme(theme.DefaultTheme())
-				}
-				refreshWindow(w)
-			}
-		}
-	})
-	if label, ok := codeMap[i18n.GetLang()]; ok {
-		langSelect.SetSelected(label)
-	} else {
-		langSelect.SetSelected("Chinese")
-	}
-	
 	var header fyne.CanvasObject
 	if data, err := iconData.ReadFile("assets/Icon.png"); err == nil {
 		res := fyne.NewStaticResource("Icon.png", data)
@@ -140,29 +113,10 @@ func refreshWindow(w fyne.Window) {
 		header = container.NewPadded(widget.NewLabelWithStyle("ZUON", fyne.TextAlignCenter, fyne.TextStyle{Bold: true, Monospace: true}))
 	}
 	
-	var langIcon fyne.CanvasObject
-	if data, err := iconData.ReadFile("assets/language.png"); err == nil {
-		res := fyne.NewStaticResource("language.png", data)
-		img := canvas.NewImageFromResource(res)
-		img.FillMode = canvas.ImageFillContain
-		img.SetMinSize(fyne.NewSize(20, 20))
-		langIcon = img
-	} else {
-		langIcon = widget.NewIcon(theme.SettingsIcon())
-	}
-	
 	footer := container.NewPadded(
 		container.NewVBox(
 			widget.NewSeparator(),
-			container.NewBorder(nil, nil, langIcon, nil, langSelect),
-			widget.NewButtonWithIcon(i18n.T("btn_logout"), theme.LogoutIcon(), func() {
-				fyne.CurrentApp().Preferences().SetString("auth_token", "")
-				w.Close()
-				ShowLoginWindow(fyne.CurrentApp(), func(token string) {
-					fyne.CurrentApp().Preferences().SetString("auth_token", token)
-					showMainWindow(fyne.CurrentApp())
-				})
-			}),
+			widget.NewLabelWithStyle(AppVersion, fyne.TextAlignCenter, fyne.TextStyle{Italic: true}),
 		),
 	)
 	

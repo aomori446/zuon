@@ -37,7 +37,7 @@ func Init() {
 		fmt.Println("Error loading my locale:", err)
 	}
 	
-	currentLang := fyne.CurrentApp().Preferences().StringWithFallback("language", "zh")
+	currentLang := fyne.CurrentApp().Preferences().StringWithFallback("language", "en")
 	SetLang(currentLang)
 }
 
@@ -47,7 +47,7 @@ func SetLang(lang string) {
 }
 
 func GetLang() string {
-	return fyne.CurrentApp().Preferences().StringWithFallback("language", "zh")
+	return fyne.CurrentApp().Preferences().StringWithFallback("language", "en")
 }
 
 func T(messageID string) string {
