@@ -32,6 +32,10 @@ func Init() {
 	if err != nil {
 		fmt.Println("Error loading ja locale:", err)
 	}
+	_, err = bundle.LoadMessageFileFS(localeFS, "locales/active.my.json")
+	if err != nil {
+		fmt.Println("Error loading my locale:", err)
+	}
 	
 	currentLang := fyne.CurrentApp().Preferences().StringWithFallback("language", "zh")
 	SetLang(currentLang)

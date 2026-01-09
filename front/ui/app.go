@@ -12,12 +12,18 @@ import (
 	"github.com/aomori446/zuon/front/i18n"
 )
 
-//go:embed assets/Icon.png
+//go:embed assets/*.png
 var iconData embed.FS
 
 func Start() {
 	a := app.NewWithID("com.aomori446.zuon")
 	i18n.Init()
+	
+	if i18n.GetLang() == "my" {
+		a.Settings().SetTheme(&myTheme{})
+	} else {
+		a.Settings().SetTheme(theme.DefaultTheme())
+	}
 	
 	w := a.NewWindow(i18n.T("app_title"))
 	
@@ -45,7 +51,7 @@ func refreshWindow(w fyne.Window) {
 	
 	pages := []fyne.CanvasObject{embedPage, extractPage}
 	
-	contentContainer := container.NewMax()
+	contentContainer := container.NewStack()
 	
 	navList := widget.NewList(
 		func() int { return len(navData) },
@@ -77,20 +83,27 @@ func refreshWindow(w fyne.Window) {
 	}
 	
 	langMap := map[string]string{
-		"中文":    "zh",
-		"English": "en",
-		"日本語":  "ja",
+		"Chinese":  "zh",
+		"English":  "en",
+		"Japanese": "ja",
+		"Myanmar":  "my",
 	}
 	codeMap := map[string]string{
-		"zh": "中文",
+		"zh": "Chinese",
 		"en": "English",
-		"ja": "日本語",
+		"ja": "Japanese",
+		"my": "Myanmar",
 	}
 	
-	langSelect := widget.NewSelect([]string{"中文", "English", "日本語"}, func(s string) {
+	langSelect := widget.NewSelect([]string{"Chinese", "English", "Japanese", "Myanmar"}, func(s string) {
 		if code, ok := langMap[s]; ok {
 			if code != i18n.GetLang() {
 				i18n.SetLang(code)
+				if code == "my" {
+					fyne.CurrentApp().Settings().SetTheme(&myTheme{})
+				} else {
+					fyne.CurrentApp().Settings().SetTheme(theme.DefaultTheme())
+				}
 				refreshWindow(w)
 			}
 		}
@@ -98,7 +111,7 @@ func refreshWindow(w fyne.Window) {
 	if label, ok := codeMap[i18n.GetLang()]; ok {
 		langSelect.SetSelected(label)
 	} else {
-		langSelect.SetSelected("中文")
+		langSelect.SetSelected("Chinese")
 	}
 	
 	var header fyne.CanvasObject
@@ -115,10 +128,21 @@ func refreshWindow(w fyne.Window) {
 		header = container.NewPadded(widget.NewLabelWithStyle("ZUON", fyne.TextAlignCenter, fyne.TextStyle{Bold: true, Monospace: true}))
 	}
 	
+	var langIcon fyne.CanvasObject
+	if data, err := iconData.ReadFile("assets/language.png"); err == nil {
+		res := fyne.NewStaticResource("language.png", data)
+		img := canvas.NewImageFromResource(res)
+		img.FillMode = canvas.ImageFillContain
+		img.SetMinSize(fyne.NewSize(20, 20))
+		langIcon = img
+	} else {
+		langIcon = widget.NewIcon(theme.SettingsIcon())
+	}
+	
 	footer := container.NewPadded(
 		container.NewVBox(
 			widget.NewSeparator(),
-			container.NewBorder(nil, nil, widget.NewIcon(theme.SettingsIcon()), nil, langSelect),
+			container.NewBorder(nil, nil, langIcon, nil, langSelect),
 		),
 	)
 	

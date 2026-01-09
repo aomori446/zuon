@@ -19,7 +19,7 @@ func NewUnsplashHandler(client *unsplash.Client) *UnsplashHandler {
 func (h *UnsplashHandler) Search(c *gin.Context) {
 	query := c.Query("query")
 	pageStr := c.DefaultQuery("page", "1")
-	perPageStr := c.DefaultQuery("per_page", "12")
+	perPageStr := c.DefaultQuery("per_page", "24")
 
 	if query == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "query parameter is required"})
@@ -27,12 +27,16 @@ func (h *UnsplashHandler) Search(c *gin.Context) {
 	}
 
 	page, err := strconv.Atoi(pageStr)
-	if err != nil {
+	if err != nil || page < 1 {
 		page = 1
 	}
 	perPage, err := strconv.Atoi(perPageStr)
-	if err != nil {
-		perPage = 12
+	if err != nil || perPage < 1 {
+		perPage = 24
+	}
+	// Defensive coding: limit max perPage to 30 to prevent abuse
+	if perPage > 30 {
+		perPage = 30
 	}
 
 	results, err := h.client.SearchPhotos(query, page, perPage)
