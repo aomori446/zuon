@@ -2,7 +2,9 @@ package api
 
 import (
 	"log"
+	"net/http"
 
+	"github.com/aomori446/zuon/internal/auth"
 	"github.com/aomori446/zuon/internal/unsplash"
 	"github.com/gin-gonic/gin"
 )
@@ -43,8 +45,44 @@ func NewServer(apiKey string) (*Server, error) {
 
 func (s *Server) routes() {
 	unsplashHandler := NewUnsplashHandler(s.client)
+	authHandler := NewAuthHandler()
 	
-	s.router.GET("/search", unsplashHandler.Search)
+	// Auth routes
+	authGroup := s.router.Group("/auth")
+	{
+		authGroup.GET("/login", authHandler.Login)
+		authGroup.GET("/mock_github", authHandler.MockGitHubPage)
+		authGroup.GET("/callback", authHandler.Callback)
+		authGroup.GET("/poll", authHandler.Poll)
+	}
+
+	// Protected Unsplash routes
+	s.router.GET("/search", authMiddleware(), unsplashHandler.Search)
+}
+
+func authMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		tokenString := c.GetHeader("Authorization")
+		if len(tokenString) > 7 && tokenString[:7] == "Bearer " {
+			tokenString = tokenString[7:]
+		}
+
+		if tokenString == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization token required"})
+			c.Abort()
+			return
+		}
+
+		claims, err := auth.ValidateToken(tokenString)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+			c.Abort()
+			return
+		}
+
+		c.Set("user_id", claims.UserID)
+		c.Next()
+	}
 }
 
 func (s *Server) Run(addr string) error {

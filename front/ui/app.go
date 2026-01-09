@@ -24,14 +24,26 @@ func Start() {
 	} else {
 		a.Settings().SetTheme(theme.DefaultTheme())
 	}
+
+	token := a.Preferences().String("auth_token")
+	if token == "" {
+		ShowLoginWindow(a, func(newToken string) {
+			a.Preferences().SetString("auth_token", newToken)
+			showMainWindow(a)
+		})
+	} else {
+		showMainWindow(a)
+	}
 	
+	a.Run()
+}
+
+func showMainWindow(a fyne.App) {
 	w := a.NewWindow(i18n.T("app_title"))
-	
 	refreshWindow(w)
-	
 	w.CenterOnScreen()
 	w.Resize(fyne.NewSize(900, 600))
-	w.ShowAndRun()
+	w.Show()
 }
 
 func refreshWindow(w fyne.Window) {
