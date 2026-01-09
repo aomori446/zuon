@@ -1,4 +1,4 @@
-package ui
+package widgets
 
 import (
 	"fmt"
@@ -14,6 +14,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/aomori446/zuon/front/i18n"
+	"github.com/aomori446/zuon/front/ui/core"
 	"github.com/aomori446/zuon/internal"
 )
 
@@ -52,7 +53,7 @@ func NewFileSelector(
 			}
 			defer reader.Close()
 			if err != nil {
-				ShowLocalizedError(err, parent)
+				core.ShowLocalizedError(err, parent)
 				return
 			}
 			
@@ -135,7 +136,7 @@ func ShowResultDialog(parent fyne.Window, data []byte, ext string) {
 	} else {
 		info := widget.NewLabel(i18n.Tf("label_format_size", map[string]interface{}{
 			"Format": ext,
-			"Size":   formatBytes(len(data)),
+			"Size":   core.FormatBytes(len(data)),
 		}))
 		info.Alignment = fyne.TextAlignCenter
 		
@@ -154,14 +155,14 @@ func saveFile(parent fyne.Window, data []byte, ext string) {
 			return
 		}
 		if err != nil {
-			ShowLocalizedError(err, parent)
+			core.ShowLocalizedError(err, parent)
 			return
 		}
 		defer writer.Close()
 		
 		_, err = writer.Write(data)
 		if err != nil {
-			ShowLocalizedError(err, parent)
+			core.ShowLocalizedError(err, parent)
 			return
 		}
 		

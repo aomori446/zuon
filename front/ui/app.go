@@ -10,20 +10,22 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/aomori446/zuon/front/i18n"
+	"github.com/aomori446/zuon/front/ui/core"
+	"github.com/aomori446/zuon/front/ui/pages"
 )
 
-//go:embed assets/*.png
+//go:embed core/assets/*.png
 var iconData embed.FS
 
 func Start() {
 	a := app.NewWithID("com.aomori446.zuon")
 	i18n.Init()
 	
-	applyTheme(a)
-
+	core.ApplyTheme(a)
+	
 	token := a.Preferences().String("auth_token")
 	if token == "" {
-		ShowLoginWindow(a, func(newToken string) {
+		pages.ShowLoginWindow(a, func(newToken string) {
 			a.Preferences().SetString("auth_token", newToken)
 			showMainWindow(a)
 		})
@@ -32,11 +34,6 @@ func Start() {
 	}
 	
 	a.Run()
-}
-
-func applyTheme(a fyne.App) {
-	mode := a.Preferences().Int("theme_mode")
-	a.Settings().SetTheme(NewMyTheme(mode))
 }
 
 func showMainWindow(a fyne.App) {
@@ -60,13 +57,22 @@ func refreshWindow(w fyne.Window) {
 		{i18n.T("tab_settings"), theme.SettingsIcon()},
 	}
 	
-	embedPage := NewEmbedTab(w).Content
-	extractPage := NewExtractTab(w).Content
-	settingsPage := NewSettingsTab(w, fyne.CurrentApp(), func() {
+	embedPage := pages.NewEmbedTab(w).Content
+	extractPage := pages.NewExtractTab(w).Content
+	settingsPage := pages.NewSettingsTab(w, fyne.CurrentApp(), func() {
 		refreshWindow(w)
+	}, func() {
+		// onLogout
+		a := fyne.CurrentApp()
+		a.Preferences().SetString("auth_token", "")
+		w.Close()
+		pages.ShowLoginWindow(a, func(token string) {
+			a.Preferences().SetString("auth_token", token)
+			showMainWindow(a)
+		})
 	}).Content
 	
-	pages := []fyne.CanvasObject{embedPage, extractPage, settingsPage}
+	pageObjects := []fyne.CanvasObject{embedPage, extractPage, settingsPage}
 	
 	contentContainer := container.NewStack()
 	
@@ -92,15 +98,15 @@ func refreshWindow(w fyne.Window) {
 	)
 	
 	navList.OnSelected = func(id widget.ListItemID) {
-		if id < 0 || id >= len(pages) {
+		if id < 0 || id >= len(pageObjects) {
 			return
 		}
-		contentContainer.Objects = []fyne.CanvasObject{pages[id]}
+		contentContainer.Objects = []fyne.CanvasObject{pageObjects[id]}
 		contentContainer.Refresh()
 	}
 	
 	var header fyne.CanvasObject
-	if data, err := iconData.ReadFile("assets/Icon.png"); err == nil {
+	if data, err := iconData.ReadFile("core/assets/Icon.png"); err == nil {
 		res := fyne.NewStaticResource("Icon.png", data)
 		img := canvas.NewImageFromResource(res)
 		img.FillMode = canvas.ImageFillContain
@@ -116,7 +122,7 @@ func refreshWindow(w fyne.Window) {
 	footer := container.NewPadded(
 		container.NewVBox(
 			widget.NewSeparator(),
-			widget.NewLabelWithStyle(AppVersion, fyne.TextAlignCenter, fyne.TextStyle{Italic: true}),
+			widget.NewLabelWithStyle(core.AppVersion, fyne.TextAlignCenter, fyne.TextStyle{Italic: true}),
 		),
 	)
 	

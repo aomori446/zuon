@@ -1,8 +1,8 @@
-package ui
+package core
 
 import "fmt"
 
-func formatBytes(s int) string {
+func FormatBytes(s int) string {
 	sizes := []string{"B", "KB", "MB", "GB", "TB"}
 	i := 0
 	v := float64(s)

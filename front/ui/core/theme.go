@@ -1,9 +1,9 @@
-package ui
+package core
 
 import (
 	"embed"
 	"image/color"
-
+	
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/theme"
 	"github.com/aomori446/zuon/front/i18n"
@@ -41,7 +41,7 @@ func (m *myTheme) Color(n fyne.ThemeColorName, v fyne.ThemeVariant) color.Color 
 
 func (m *myTheme) Font(s fyne.TextStyle) fyne.Resource {
 	lang := i18n.GetLang()
-
+	
 	if lang == "my" {
 		if s.Bold {
 			if data, err := fontAssets.ReadFile("assets/fonts/NotoSansMyanmar-Bold.ttf"); err == nil {
@@ -52,7 +52,7 @@ func (m *myTheme) Font(s fyne.TextStyle) fyne.Resource {
 			return fyne.NewStaticResource("NotoSansMyanmar-Regular.ttf", data)
 		}
 	}
-
+	
 	// Fallback to default theme font for other languages
 	return theme.DefaultTheme().Font(s)
 }
@@ -65,3 +65,7 @@ func (m *myTheme) Size(n fyne.ThemeSizeName) float32 {
 	return theme.DefaultTheme().Size(n)
 }
 
+func ApplyTheme(a fyne.App) {
+	mode := a.Preferences().Int("theme_mode")
+	a.Settings().SetTheme(NewMyTheme(mode))
+}

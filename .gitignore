@@ -1,3 +1,5 @@
 .idea
 fyne-cross/
 .env
+backend/
+zuon

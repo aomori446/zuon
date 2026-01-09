@@ -1,13 +1,13 @@
-package ui
+package widgets
 
 import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/theme"
 )
 
-type customVBox struct{}
+type CustomVBox struct{}
 
-func (b *customVBox) MinSize(objects []fyne.CanvasObject) fyne.Size {
+func (b *CustomVBox) MinSize(objects []fyne.CanvasObject) fyne.Size {
 	w, h := float32(0), float32(0)
 	for _, o := range objects {
 		if !o.Visible() {
@@ -22,7 +22,7 @@ func (b *customVBox) MinSize(objects []fyne.CanvasObject) fyne.Size {
 	return fyne.NewSize(w, h)
 }
 
-func (b *customVBox) Layout(objects []fyne.CanvasObject, containerSize fyne.Size) {
+func (b *CustomVBox) Layout(objects []fyne.CanvasObject, containerSize fyne.Size) {
 	pos := fyne.NewPos(0, 0)
 	for _, o := range objects {
 		if !o.Visible() {

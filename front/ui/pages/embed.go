@@ -1,4 +1,4 @@
-package ui
+package pages
 
 import (
 	"fmt"
@@ -18,16 +18,18 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/aomori446/zuon/front/i18n"
+	"github.com/aomori446/zuon/front/ui/core"
+	"github.com/aomori446/zuon/front/ui/widgets"
 	"github.com/aomori446/zuon/internal"
 )
 
 func NewEmbedTab(parent fyne.Window) *container.TabItem {
 	
-	var btnImage *CarryButton
+	var btnImage *widgets.CarryButton
 	var labelCapacity *widget.Label
 	var cardImage *widget.Card
 	
-	cardImage, btnImage, labelCapacity = NewFileSelector(
+	cardImage, btnImage, labelCapacity = widgets.NewFileSelector(
 		parent,
 		i18n.T("embed_carrier_title"),
 		i18n.T("embed_carrier_subtitle"),
@@ -36,13 +38,13 @@ func NewEmbedTab(parent fyne.Window) *container.TabItem {
 		func(reader fyne.URIReadCloser) {
 			img, _, err := image.Decode(reader)
 			if err != nil {
-				ShowLocalizedError(err, parent)
+				core.ShowLocalizedError(err, parent)
 				return
 			}
 			
 			btnImage.Carry = img
 			
-			capacity := formatBytes(internal.Capacity(img))
+			capacity := core.FormatBytes(internal.Capacity(img))
 			labelCapacity.SetText(i18n.Tf("label_capacity", map[string]interface{}{"Capacity": capacity}))
 			labelCapacity.TextStyle = fyne.TextStyle{Bold: true}
 			labelCapacity.Show()
@@ -55,7 +57,7 @@ func NewEmbedTab(parent fyne.Window) *container.TabItem {
 			btnImage.SetText(name)
 			btnImage.SetIcon(theme.ConfirmIcon())
 			
-			capacity := formatBytes(internal.Capacity(img))
+			capacity := core.FormatBytes(internal.Capacity(img))
 			labelCapacity.SetText(i18n.Tf("label_capacity", map[string]interface{}{"Capacity": capacity}))
 			labelCapacity.TextStyle = fyne.TextStyle{Bold: true}
 			labelCapacity.Show()
@@ -76,14 +78,14 @@ func NewEmbedTab(parent fyne.Window) *container.TabItem {
 	fileSizeLabel.Alignment = fyne.TextAlignCenter
 	fileSizeLabel.TextStyle = fyne.TextStyle{Italic: true}
 	
-	fileBtn := NewCarryButton(i18n.T("btn_select_file"), theme.FolderOpenIcon())
+	fileBtn := widgets.NewCarryButton(i18n.T("btn_select_file"), theme.FolderOpenIcon())
 	fileBtn.OnTapped = func() {
 		d := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
 			if reader == nil {
 				return
 			}
 			if err != nil {
-				ShowLocalizedError(err, parent)
+				core.ShowLocalizedError(err, parent)
 				return
 			}
 			defer reader.Close()
@@ -97,7 +99,7 @@ func NewEmbedTab(parent fyne.Window) *container.TabItem {
 			var sizeStr string
 			if uri := reader.URI(); uri != nil && uri.Scheme() == "file" {
 				if info, err := os.Stat(uri.Path()); err == nil {
-					sizeStr = formatBytes(int(info.Size()))
+					sizeStr = core.FormatBytes(int(info.Size()))
 				}
 			}
 			
@@ -146,7 +148,7 @@ func NewEmbedTab(parent fyne.Window) *container.TabItem {
 		container.NewVBox(radioGroup, textEntry, fileBtn, fileSizeLabel),
 	)
 	
-	cardPassword, entryPassword := NewPasswordCard()
+	cardPassword, entryPassword := widgets.NewPasswordCard()
 	
 	progressBar := widget.NewProgressBarInfinite()
 	progressBar.Hide()
@@ -157,7 +159,7 @@ func NewEmbedTab(parent fyne.Window) *container.TabItem {
 	embedButton.OnTapped = func() {
 		
 		if btnImage.Carry == nil {
-			ShowLocalizedError(internal.ErrNoCarrier, parent)
+			core.ShowLocalizedError(internal.ErrNoCarrier, parent)
 			return
 		}
 		
@@ -167,34 +169,34 @@ func NewEmbedTab(parent fyne.Window) *container.TabItem {
 		if radioGroup.Selected == i18n.T("radio_text") {
 			text := textEntry.Text
 			if text == "" {
-				ShowLocalizedError(internal.ErrNoText, parent)
+				core.ShowLocalizedError(internal.ErrNoText, parent)
 				return
 			}
 			data = []byte(text)
 			ext = ""
 		} else {
 			if fileBtn.Carry == nil {
-				ShowLocalizedError(internal.ErrNoFile, parent)
+				core.ShowLocalizedError(internal.ErrNoFile, parent)
 				return
 			}
 			uri := fileBtn.Carry.(fyne.URI)
 			f, err := os.Open(uri.Path())
 			if err != nil {
-				ShowLocalizedError(err, parent)
+				core.ShowLocalizedError(err, parent)
 				return
 			}
 			defer f.Close()
 			
 			data, err = io.ReadAll(f)
 			if err != nil {
-				ShowLocalizedError(err, parent)
+				core.ShowLocalizedError(err, parent)
 				return
 			}
 			ext = path.Ext(uri.Path())
 		}
 		
 		if entryPassword.Validate() != nil {
-			ShowLocalizedError(internal.ErrPasswordShort, parent)
+			core.ShowLocalizedError(internal.ErrPasswordShort, parent)
 			return
 		}
 		password := entryPassword.Text
@@ -212,7 +214,7 @@ func NewEmbedTab(parent fyne.Window) *container.TabItem {
 				progressBar.Hide()
 				
 				if err != nil {
-					ShowLocalizedError(err, parent)
+					core.ShowLocalizedError(err, parent)
 					return
 				}
 				
@@ -222,7 +224,7 @@ func NewEmbedTab(parent fyne.Window) *container.TabItem {
 	}
 	
 	contentVBox := container.New(
-		&customVBox{},
+		&widgets.CustomVBox{},
 		cardImage,
 		layout.NewSpacer(),
 		cardData,
@@ -243,14 +245,14 @@ func saveEmbedResult(parent fyne.Window, img image.Image) {
 			return
 		}
 		if err != nil {
-			ShowLocalizedError(err, parent)
+			core.ShowLocalizedError(err, parent)
 			return
 		}
 		defer writer.Close()
 		
 		err = png.Encode(writer, img)
 		if err != nil {
-			ShowLocalizedError(err, parent)
+			core.ShowLocalizedError(err, parent)
 			return
 		}
 		

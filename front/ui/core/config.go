@@ -1,4 +1,4 @@
-package ui
+package core
 
 // APIBaseURL is the base URL for the backend API.
 // Change this to your production server URL when building for release.

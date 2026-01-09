@@ -1,4 +1,4 @@
-package ui
+package pages
 
 import (
 	"encoding/json"
@@ -7,7 +7,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-
+	
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
@@ -15,6 +15,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/aomori446/zuon/front/i18n"
+	"github.com/aomori446/zuon/front/ui/core"
 	"github.com/aomori446/zuon/internal/unsplash"
 )
 
@@ -80,33 +81,33 @@ func ShowUnsplashSearch(parent fyne.Window, onSelected func(img image.Image, nam
 			}()
 			
 			// Call local server instead of direct API
-			reqURL := fmt.Sprintf("%s/search?query=%s&page=1&per_page=24", APIBaseURL, url.QueryEscape(query))
+			reqURL := fmt.Sprintf("%s/search?query=%s&page=1&per_page=24", core.APIBaseURL, url.QueryEscape(query))
 			
 			req, _ := http.NewRequest("GET", reqURL, nil)
 			token := fyne.CurrentApp().Preferences().String("auth_token")
 			req.Header.Set("Authorization", "Bearer "+token)
-
+			
 			client := &http.Client{}
 			resp, err := client.Do(req)
 			if err != nil {
 				fyne.Do(func() {
-					ShowLocalizedError(err, parent)
+					core.ShowLocalizedError(err, parent)
 				})
 				return
 			}
 			defer resp.Body.Close()
-
+			
 			if resp.StatusCode != http.StatusOK {
 				fyne.Do(func() {
-					ShowLocalizedError(fmt.Errorf("server error: %d", resp.StatusCode), parent)
+					core.ShowLocalizedError(fmt.Errorf("server error: %d", resp.StatusCode), parent)
 				})
 				return
 			}
-
+			
 			var results unsplash.SearchResult
 			if err := json.NewDecoder(resp.Body).Decode(&results); err != nil {
 				fyne.Do(func() {
-					ShowLocalizedError(err, parent)
+					core.ShowLocalizedError(err, parent)
 				})
 				return
 			}
@@ -130,7 +131,7 @@ func ShowUnsplashSearch(parent fyne.Window, onSelected func(img image.Image, nam
 							fyne.Do(func() {
 								waitDialog.Hide()
 								if err != nil {
-									ShowLocalizedError(err, parent)
+									core.ShowLocalizedError(err, parent)
 									return
 								}
 								parent.Canvas().Refresh(parent.Content())
