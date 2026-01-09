@@ -155,6 +155,14 @@ func refreshWindow(w fyne.Window) {
 		container.NewVBox(
 			widget.NewSeparator(),
 			container.NewBorder(nil, nil, langIcon, nil, langSelect),
+			widget.NewButtonWithIcon(i18n.T("btn_logout"), theme.LogoutIcon(), func() {
+				fyne.CurrentApp().Preferences().SetString("auth_token", "")
+				w.Close()
+				ShowLoginWindow(fyne.CurrentApp(), func(token string) {
+					fyne.CurrentApp().Preferences().SetString("auth_token", token)
+					showMainWindow(fyne.CurrentApp())
+				})
+			}),
 		),
 	)
 	

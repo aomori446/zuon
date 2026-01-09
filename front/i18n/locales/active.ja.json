@@ -53,5 +53,13 @@
   "err_extension_too_long": "ファイル拡張子が長すぎます。",
   "err_network_issue": "ネットワーク接続エラー。",
   "err_rate_limited": "APIリクエスト回数制限を超えました。しばらく待ってから再試行してください。",
-  "err_internal": "内部エラーが発生しました。"
+  "err_internal": "内部エラーが発生しました。",
+  "btn_logout": "ログアウト",
+  "login_title": "ログイン - zuon",
+  "login_welcome": "ZUONへようこそ",
+  "login_prompt": "続けるにはログインしてください",
+  "btn_login_github": "GitHubでログイン",
+  "login_opening_browser": "ブラウザを開いています...",
+  "login_error_server": "サーバーエラー",
+  "login_timeout": "ログインタイムアウト"
 }

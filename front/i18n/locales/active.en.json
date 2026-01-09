@@ -53,5 +53,13 @@
   "err_extension_too_long": "File extension is too long.",
   "err_network_issue": "Network connection error.",
   "err_rate_limited": "API rate limit exceeded. Please wait.",
-  "err_internal": "An internal error occurred."
+  "err_internal": "An internal error occurred.",
+  "btn_logout": "Logout",
+  "login_title": "Login - zuon",
+  "login_welcome": "Welcome to ZUON",
+  "login_prompt": "Please login to continue",
+  "btn_login_github": "Login with GitHub",
+  "login_opening_browser": "Opening browser...",
+  "login_error_server": "Server error",
+  "login_timeout": "Login timeout"
 }

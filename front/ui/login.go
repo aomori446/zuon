@@ -10,26 +10,27 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
+	"github.com/aomori446/zuon/front/i18n"
 )
 
 func ShowLoginWindow(a fyne.App, onLoginSuccess func(token string)) {
-	w := a.NewWindow("Login - zuon")
+	w := a.NewWindow(i18n.T("login_title"))
 	
-	statusLabel := widget.NewLabel("Please login to continue")
-	loginBtn := widget.NewButton("Login with GitHub", nil)
+	statusLabel := widget.NewLabel(i18n.T("login_prompt"))
+	loginBtn := widget.NewButton(i18n.T("btn_login_github"), nil)
 	progressBar := widget.NewProgressBarInfinite()
 	progressBar.Hide()
 
 	loginBtn.OnTapped = func() {
 		loginBtn.Disable()
-		statusLabel.SetText("Opening browser...")
+		statusLabel.SetText(i18n.T("login_opening_browser"))
 		progressBar.Show()
 
 		go func() {
 			// 1. Get Login URL
-			resp, err := http.Get("http://localhost:8080/auth/login")
+			resp, err := http.Get(fmt.Sprintf("%s/api/v1/auth/github/login", APIBaseURL))
 			if err != nil {
-				handleLoginError(w, loginBtn, statusLabel, progressBar, "Server error")
+				handleLoginError(w, loginBtn, statusLabel, progressBar, i18n.T("login_error_server"))
 				return
 			}
 			defer resp.Body.Close()
@@ -54,7 +55,7 @@ func ShowLoginWindow(a fyne.App, onLoginSuccess func(token string)) {
 			for {
 				select {
 				case <-ticker.C:
-					pollResp, err := http.Get(fmt.Sprintf("http://localhost:8080/auth/poll?req_id=%s", loginData.RequestID))
+					pollResp, err := http.Get(fmt.Sprintf("%s/api/v1/auth/github/poll?req_id=%s", APIBaseURL, loginData.RequestID))
 					if err != nil {
 						continue
 					}
@@ -73,7 +74,7 @@ func ShowLoginWindow(a fyne.App, onLoginSuccess func(token string)) {
 						return
 					}
 				case <-timeout:
-					handleLoginError(w, loginBtn, statusLabel, progressBar, "Login timeout")
+					handleLoginError(w, loginBtn, statusLabel, progressBar, i18n.T("login_timeout"))
 					return
 				}
 			}
@@ -82,7 +83,7 @@ func ShowLoginWindow(a fyne.App, onLoginSuccess func(token string)) {
 
 	w.SetContent(container.NewCenter(
 		container.NewVBox(
-			widget.NewLabelWithStyle("Welcome to ZUON", fyne.TextAlignCenter, fyne.TextStyle{Bold: true}),
+			widget.NewLabelWithStyle(i18n.T("login_welcome"), fyne.TextAlignCenter, fyne.TextStyle{Bold: true}),
 			statusLabel,
 			loginBtn,
 			progressBar,

@@ -80,7 +80,7 @@ func ShowUnsplashSearch(parent fyne.Window, onSelected func(img image.Image, nam
 			}()
 			
 			// Call local server instead of direct API
-			reqURL := fmt.Sprintf("http://localhost:8080/search?query=%s&page=1&per_page=24", url.QueryEscape(query))
+			reqURL := fmt.Sprintf("%s/search?query=%s&page=1&per_page=24", APIBaseURL, url.QueryEscape(query))
 			
 			req, _ := http.NewRequest("GET", reqURL, nil)
 			token := fyne.CurrentApp().Preferences().String("auth_token")

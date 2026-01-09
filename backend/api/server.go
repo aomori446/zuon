@@ -48,10 +48,9 @@ func (s *Server) routes() {
 	authHandler := NewAuthHandler()
 	
 	// Auth routes
-	authGroup := s.router.Group("/auth")
+	authGroup := s.router.Group("/api/v1/auth/github")
 	{
 		authGroup.GET("/login", authHandler.Login)
-		authGroup.GET("/mock_github", authHandler.MockGitHubPage)
 		authGroup.GET("/callback", authHandler.Callback)
 		authGroup.GET("/poll", authHandler.Poll)
 	}
