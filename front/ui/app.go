@@ -79,7 +79,6 @@ func refreshWindow(w fyne.Window) {
 	navList := widget.NewList(
 		func() int { return len(navData) },
 		func() fyne.CanvasObject {
-			
 			return container.NewHBox(
 				widget.NewIcon(theme.DocumentIcon()),
 				widget.NewLabel("Template Label"),
