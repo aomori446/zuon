@@ -13,14 +13,14 @@ type SettingsTab struct {
 	Content fyne.CanvasObject
 }
 
-func NewSettingsTab(w fyne.Window, a fyne.App, onRefresh func(), onLogout func()) *SettingsTab {
-	// --- Language Section ---
+func NewSettingsTab(a fyne.App, onRefresh func(), onLogout func()) *SettingsTab {
 	langMap := map[string]string{
 		"Chinese":  "zh",
 		"English":  "en",
 		"Japanese": "ja",
 		"Myanmar":  "my",
 	}
+	
 	codeMap := map[string]string{
 		"zh": "Chinese",
 		"en": "English",

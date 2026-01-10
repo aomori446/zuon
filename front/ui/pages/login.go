@@ -35,15 +35,35 @@ func ShowLoginWindow(a fyne.App, onLoginSuccess func(token string)) {
 				return
 			}
 			defer resp.Body.Close()
+
+			if resp.StatusCode != http.StatusOK {
+				fmt.Printf("Login API returned status: %d\n", resp.StatusCode)
+				handleLoginError(w, loginBtn, statusLabel, progressBar, fmt.Sprintf("Server Error: %d", resp.StatusCode))
+				return
+			}
 			
 			var loginData struct {
 				RequestID string `json:"request_id"`
 				LoginURL  string `json:"login_url"`
 			}
-			json.NewDecoder(resp.Body).Decode(&loginData)
+			if err := json.NewDecoder(resp.Body).Decode(&loginData); err != nil {
+				fmt.Printf("JSON decode error: %v\n", err)
+				handleLoginError(w, loginBtn, statusLabel, progressBar, "Server response error")
+				return
+			}
+
+			if loginData.LoginURL == "" {
+				fmt.Println("Error: Received empty LoginURL from server")
+				handleLoginError(w, loginBtn, statusLabel, progressBar, "Invalid server response")
+				return
+			}
 			
 			// 2. Open browser
-			u, _ := url.Parse(loginData.LoginURL)
+			u, err := url.Parse(loginData.LoginURL)
+			if err != nil {
+				fmt.Printf("URL parse error: %v\n", err)
+				return 
+			}
 			fmt.Println("Opening:", loginData.LoginURL)
 			a.OpenURL(u)
 			

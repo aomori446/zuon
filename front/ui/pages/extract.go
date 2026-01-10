@@ -16,7 +16,6 @@ import (
 )
 
 func NewExtractTab(parent fyne.Window) *container.TabItem {
-	
 	var btnImage *widgets.CarryButton
 	var cardImage *widget.Card
 	

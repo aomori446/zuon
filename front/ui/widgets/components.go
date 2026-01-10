@@ -39,7 +39,6 @@ func NewFileSelector(
 	extensions []string,
 	onSelected func(fyne.URIReadCloser),
 ) (*widget.Card, *CarryButton, *widget.Label) {
-	
 	infoLabel := widget.NewLabel("")
 	infoLabel.Hide()
 	infoLabel.Alignment = fyne.TextAlignCenter

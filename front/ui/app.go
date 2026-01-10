@@ -59,7 +59,7 @@ func refreshWindow(w fyne.Window) {
 	
 	embedPage := pages.NewEmbedTab(w).Content
 	extractPage := pages.NewExtractTab(w).Content
-	settingsPage := pages.NewSettingsTab(w, fyne.CurrentApp(), func() {
+	settingsPage := pages.NewSettingsTab(fyne.CurrentApp(), func() {
 		refreshWindow(w)
 	}, func() {
 		// onLogout
