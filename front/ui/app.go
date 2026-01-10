@@ -2,6 +2,7 @@ package ui
 
 import (
 	"embed"
+	"net/url"
 	
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -118,9 +119,14 @@ func refreshWindow(w fyne.Window) {
 		header = container.NewPadded(widget.NewLabelWithStyle("ZUON", fyne.TextAlignCenter, fyne.TextStyle{Bold: true, Monospace: true}))
 	}
 	
+	ghUrl, _ := url.Parse("https://github.com/aomori446/zuon")
+	ghLink := widget.NewHyperlink("Star on GitHub", ghUrl)
+	ghLink.Alignment = fyne.TextAlignCenter
+
 	footer := container.NewPadded(
 		container.NewVBox(
 			widget.NewSeparator(),
+			ghLink,
 			widget.NewLabelWithStyle(core.AppVersion, fyne.TextAlignCenter, fyne.TextStyle{Italic: true}),
 		),
 	)

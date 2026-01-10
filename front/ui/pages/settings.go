@@ -45,8 +45,13 @@ func NewSettingsTab(a fyne.App, onRefresh func(), onLogout func()) *SettingsTab 
 	
 	langCard := widget.NewCard(i18n.T("settings_language"), "", container.NewVBox(langSelect))
 	
-	// --- Theme Section ---
-	themeOptions := []string{i18n.T("settings_theme_system"), i18n.T("settings_theme_dark"), i18n.T("settings_theme_light")}
+	themeOptions := []string{
+		i18n.T("settings_theme_system"),
+		i18n.T("settings_theme_dark"),
+		i18n.T("settings_theme_light"),
+		i18n.T("settings_theme_ocean"),
+		i18n.T("settings_theme_forest"),
+	}
 	themeSelect := widget.NewSelect(themeOptions, func(s string) {
 		var mode int
 		switch s {
@@ -54,6 +59,10 @@ func NewSettingsTab(a fyne.App, onRefresh func(), onLogout func()) *SettingsTab 
 			mode = core.ThemeModeDark
 		case i18n.T("settings_theme_light"):
 			mode = core.ThemeModeLight
+		case i18n.T("settings_theme_ocean"):
+			mode = core.ThemeModeOcean
+		case i18n.T("settings_theme_forest"):
+			mode = core.ThemeModeForest
 		default:
 			mode = core.ThemeModeSystem
 		}
@@ -61,20 +70,22 @@ func NewSettingsTab(a fyne.App, onRefresh func(), onLogout func()) *SettingsTab 
 		core.ApplyTheme(a)
 	})
 	
-	// Set current selection
 	currentMode := a.Preferences().Int("theme_mode")
 	switch currentMode {
 	case core.ThemeModeDark:
 		themeSelect.SetSelected(i18n.T("settings_theme_dark"))
 	case core.ThemeModeLight:
 		themeSelect.SetSelected(i18n.T("settings_theme_light"))
+	case core.ThemeModeOcean:
+		themeSelect.SetSelected(i18n.T("settings_theme_ocean"))
+	case core.ThemeModeForest:
+		themeSelect.SetSelected(i18n.T("settings_theme_forest"))
 	default:
 		themeSelect.SetSelected(i18n.T("settings_theme_system"))
 	}
 	
 	themeCard := widget.NewCard(i18n.T("settings_theme"), "", container.NewVBox(themeSelect))
 	
-	// --- Account Section ---
 	logoutBtn := widget.NewButtonWithIcon(i18n.T("btn_logout"), theme.LogoutIcon(), func() {
 		if onLogout != nil {
 			onLogout()
@@ -84,7 +95,6 @@ func NewSettingsTab(a fyne.App, onRefresh func(), onLogout func()) *SettingsTab 
 	
 	accountCard := widget.NewCard(i18n.T("settings_account"), "", container.NewVBox(logoutBtn))
 	
-	// Layout
 	content := container.NewVBox(
 		langCard,
 		themeCard,

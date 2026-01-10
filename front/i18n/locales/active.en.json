@@ -67,6 +67,8 @@
   "settings_theme_system": "System Default",
   "settings_theme_dark": "Dark Mode",
   "settings_theme_light": "Light Mode",
+  "settings_theme_ocean": "Ocean",
+  "settings_theme_forest": "Forest",
   "settings_language": "Language",
   "settings_account": "Account"
 }
