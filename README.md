@@ -25,9 +25,9 @@
 ## 📦 Installation / インストール
 
 ### Download Binary (Recommended)
-Go to the [Releases](https://github.com/aomori446/zuon/releases) page and download the latest version (`v1.2.0+`) for your operating system.
+Go to the [Releases](https://github.com/aomori446/zuon/releases) page and download the latest version (`v1.3.0+`) for your operating system.
 
-[リリースページ](https://github.com/aomori446/zuon/releases)から、お使いのOSに合わせた最新バージョン（`v1.2.0`以降）をダウンロードしてください。
+[リリースページ](https://github.com/aomori446/zuon/releases)から、お使いのOSに合わせた最新バージョン（`v1.3.0`以降）をダウンロードしてください。
 
 ### Build from Source
 If you have Go installed, you can build it yourself:
