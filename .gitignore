@@ -3,3 +3,4 @@ fyne-cross/
 backend/
 zuon
 cmd/server/
+build-windows.sh
