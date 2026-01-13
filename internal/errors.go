@@ -20,4 +20,5 @@ var (
 	ErrNoText        = errors.New("err_no_text")
 	ErrNoFile        = errors.New("err_no_file")
 	ErrPasswordShort = errors.New("err_password_short")
+	ErrSessionExpired = errors.New("err_session_expired")
 )

@@ -54,6 +54,7 @@
   "err_network_issue": "Network connection error.",
   "err_rate_limited": "API rate limit exceeded. Please wait.",
   "err_internal": "An internal error occurred.",
+  "err_session_expired": "Session expired. Please log in again.",
   "btn_logout": "Logout",
   "login_title": "Login - zuon",
   "login_welcome": "Welcome to ZUON",

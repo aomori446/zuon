@@ -81,15 +81,19 @@ func ShowLoginWindow(a fyne.App, onLoginSuccess func(token string)) {
 						continue
 					}
 					var pollResult struct {
-						Status string `json:"status"`
-						Token  string `json:"token"`
+						Status       string `json:"status"`
+						AccessToken  string `json:"access_token"`
+						RefreshToken string `json:"refresh_token"`
 					}
 					json.NewDecoder(pollResp.Body).Decode(&pollResult)
 					pollResp.Body.Close()
 					
 					if pollResult.Status == "success" {
 						fyne.Do(func() {
-							onLoginSuccess(pollResult.Token)
+							// Save Refresh Token
+							fyne.CurrentApp().Preferences().SetString("refresh_token", pollResult.RefreshToken)
+							// Pass Access Token to success callback
+							onLoginSuccess(pollResult.AccessToken)
 							w.Close()
 						})
 						return

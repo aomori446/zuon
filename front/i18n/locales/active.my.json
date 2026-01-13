@@ -54,6 +54,7 @@
   "err_network_issue": "ကွန်ရက် ချိတ်ဆက်မှု အမှားအယွင်း။",
   "err_rate_limited": "API အသုံးပြုမှု ကန့်သတ်ချက် ကျော်လွန်နေပါသည်။ ခေတ္တစောင့်ဆိုင်းပါ။",
   "err_internal": "အတွင်းပိုင်း အမှားအယွင်း တစ်ခု ဖြစ်ပွားခဲ့သည်။",
+  "err_session_expired": "အကောင့်ဝင်ချိန် ကုန်ဆုံးသွားပါပြီ။ ကျေးဇူးပြု၍ ပြန်လည်ဝင်ရောက်ပါ။",
   "btn_logout": "Logout",
   "login_title": "Login - zuon",
   "login_welcome": "Welcome to ZUON",
@@ -67,6 +68,8 @@
   "settings_theme_system": "System Default",
   "settings_theme_dark": "Dark Mode",
   "settings_theme_light": "Light Mode",
+  "settings_theme_ocean": "Ocean",
+  "settings_theme_forest": "Forest",
   "settings_language": "Language",
   "settings_account": "Account"
 }

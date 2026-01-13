@@ -66,6 +66,7 @@ func refreshWindow(w fyne.Window) {
 		// onLogout
 		a := fyne.CurrentApp()
 		a.Preferences().SetString("auth_token", "")
+		a.Preferences().SetString("refresh_token", "")
 		w.Close()
 		pages.ShowLoginWindow(a, func(token string) {
 			a.Preferences().SetString("auth_token", token)

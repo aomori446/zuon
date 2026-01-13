@@ -54,6 +54,7 @@
   "err_network_issue": "网络连接错误。",
   "err_rate_limited": "API 请求频率超限，请稍后再试。",
   "err_internal": "发生内部错误。",
+  "err_session_expired": "会话已过期，请重新登录。",
   "btn_logout": "退出登录",
   "login_title": "登录 - zuon",
   "login_welcome": "欢迎使用 ZUON",
@@ -67,6 +68,8 @@
   "settings_theme_system": "跟随系统",
   "settings_theme_dark": "深色模式",
   "settings_theme_light": "浅色模式",
+  "settings_theme_ocean": "海洋",
+  "settings_theme_forest": "森林",
   "settings_language": "语言设置",
   "settings_account": "账户管理"
 }

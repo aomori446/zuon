@@ -5,4 +5,4 @@ package core
 var APIBaseURL = "https://aomori446.com"
 
 // AppVersion is the current version of the application.
-var AppVersion = "v1.3.0"
+var AppVersion = "v1.3.1"

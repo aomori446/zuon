@@ -13,7 +13,7 @@ func format(src image.Image) *image.NRGBA {
 		copy(clone.Pix, img.Pix)
 		return &clone
 	}
-
+	
 	bounds := src.Bounds()
 	dst := image.NewNRGBA(bounds)
 	draw.Draw(dst, bounds, src, bounds.Min, draw.Src)
@@ -22,15 +22,15 @@ func format(src image.Image) *image.NRGBA {
 
 type PixOperator []uint8
 
-func (p *PixOperator) Amount() int {
+func (p *PixOperator) Capacity() int {
 	return len(*p) / 4
 }
 
 func (p *PixOperator) Embed(data []byte, off int) error {
-	if off < 0 || off+len(data) > p.Amount() {
+	if off < 0 || off+len(data) > p.Capacity() {
 		return errors.New("out of bounds")
 	}
-
+	
 	for i, v := range data {
 		base := (off + i) * 4
 		(*p)[base+0] = ((*p)[base+0] & 0xFC) | ((v >> 6) & 0x03)
@@ -42,10 +42,10 @@ func (p *PixOperator) Embed(data []byte, off int) error {
 }
 
 func (p *PixOperator) UnEmbed(n int, off int) ([]byte, error) {
-	if off < 0 || n < 0 || off+n > p.Amount() {
+	if off < 0 || n < 0 || off+n > p.Capacity() {
 		return nil, errors.New("out of bounds")
 	}
-
+	
 	out := make([]byte, n)
 	for i := 0; i < n; i++ {
 		base := (off + i) * 4

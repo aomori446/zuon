@@ -44,6 +44,8 @@ func ShowLocalizedError(err error, parent fyne.Window) {
 		msg = i18n.T("err_no_file")
 	case errors.Is(err, internal.ErrPasswordShort):
 		msg = i18n.T("err_password_short")
+	case errors.Is(err, internal.ErrSessionExpired):
+		msg = i18n.T("err_session_expired")
 	default:
 		
 		msg = i18n.T("err_internal") + "\n\nDetails: " + err.Error()

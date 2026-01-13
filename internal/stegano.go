@@ -23,7 +23,7 @@ func EmbedData(src image.Image, data []byte, extension string, off int, password
 	dst := format(src)
 	op := PixOperator(dst.Pix)
 	
-	maxCapacity := op.Amount() - off
+	maxCapacity := op.Capacity() - off
 	if maxCapacity <= 0 {
 		return nil, ErrImageNotSupported
 	}
@@ -75,7 +75,7 @@ func ExtractData(src image.Image, off int, password string) ([]byte, string, err
 	}
 	
 	length := binary.BigEndian.Uint32(header)
-	if length == 0 || int(length) > op.Amount() {
+	if length == 0 || int(length) > op.Capacity() {
 		return nil, "", ErrDataNotFound
 	}
 	
